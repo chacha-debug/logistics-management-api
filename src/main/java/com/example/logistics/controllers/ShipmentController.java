@@ -42,4 +42,12 @@ public class ShipmentController {
         ShipmentResponseDTO createdShipment = shipmentService.createShipment(shipmentRequestDTO);
         return new ResponseEntity<>(createdShipment, HttpStatus.CREATED);
     }
+
+    @PatchMapping("/{id}/status")
+public ResponseEntity<ShipmentResponseDTO> updateStatus(
+        @PathVariable Long id,
+        @RequestParam String status,
+        @RequestParam(required = false) String remarks) {
+    return ResponseEntity.ok(shipmentService.updateStatus(id, status, remarks));
+}
 }
