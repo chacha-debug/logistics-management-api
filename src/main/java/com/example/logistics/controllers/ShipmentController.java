@@ -1,9 +1,10 @@
 package com.example.logistics.controllers;
 
-import com.example.logistics.models.Shipment;
-import com.example.logistics.repositories.ShipmentRepository;
+import com.example.logistics.dtos.ShipmentRequestDTO;
+import com.example.logistics.dtos.ShipmentResponseDTO;
+import com.example.logistics.services.ShipmentService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,40 +14,32 @@ import java.util.List;
 @RequestMapping("/api/shipments")
 public class ShipmentController {
 
-    @Autowired
-    private ShipmentRepository shipmentRepository;
+    private final ShipmentService shipmentService;
+
+    public ShipmentController(ShipmentService shipmentService) {
+        this.shipmentService = shipmentService;
+    }
 
     @GetMapping
-    public List<Shipment> getAllShipments() {
-        return shipmentRepository.findAll();
+    public ResponseEntity<List<ShipmentResponseDTO>> getAllShipments() {
+        return ResponseEntity.ok(shipmentService.getAllShipments());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Shipment> getShipmentById(@PathVariable Long id) {
-        return shipmentRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build()); // Returns 404 Not Found cleanly
-    }
-
-    @PostMapping
-    public ResponseEntity<Shipment> createShipment(@Valid @RequestBody Shipment shipment) {
-        Shipment savedShipment = shipmentRepository.save(shipment);
-        return ResponseEntity.ok(savedShipment);
+    public ResponseEntity<ShipmentResponseDTO> getShipmentById(@PathVariable Long id) {
+        return ResponseEntity.ok(shipmentService.getShipmentById(id));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Shipment>> searchShipments(
+    public ResponseEntity<List<ShipmentResponseDTO>> searchShipments(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String name) {
+        return ResponseEntity.ok(shipmentService.searchShipments(status, name));
+    }
 
-        if (status != null && !status.isBlank() && name != null && !name.isBlank()) {
-            return ResponseEntity.ok(shipmentRepository.findByCurrentStatusIgnoreCaseAndRecipientNameContainingIgnoreCase(status, name));
-        } else if (status != null && !status.isBlank()) {
-            return ResponseEntity.ok(shipmentRepository.findByCurrentStatusIgnoreCase(status));
-        } else if (name != null && !name.isBlank()) {
-            return ResponseEntity.ok(shipmentRepository.findByRecipientNameContainingIgnoreCase(name));
-        }
-
-        return ResponseEntity.ok(shipmentRepository.findAll());
+    @PostMapping
+    public ResponseEntity<ShipmentResponseDTO> createShipment(@Valid @RequestBody ShipmentRequestDTO shipmentRequestDTO) {
+        ShipmentResponseDTO createdShipment = shipmentService.createShipment(shipmentRequestDTO);
+        return new ResponseEntity<>(createdShipment, HttpStatus.CREATED);
     }
 }
