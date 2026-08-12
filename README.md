@@ -1,14 +1,16 @@
 # Logistics Management API
 
-A Spring Boot REST API for managing logistics operations, including customers, drivers, shipments, deliveries, shipment status updates, status history auditing, and dynamic shipping-fee calculation.
+A Spring Boot REST API for managing logistics operations, including customers, drivers, shipments, deliveries, shipment status updates, status history auditing, and shipping-fee calculation.
 
 ## Overview
 
-The Logistics Management API is a backend application designed to provide RESTful services for managing core logistics operations.
+The Logistics Management API is a backend application designed to support core logistics operations through RESTful endpoints.
 
-The system allows users to manage customers, drivers, shipments, and deliveries while providing shipment search, status tracking, status history auditing, validation, exception handling, and automated shipping-fee calculation.
+The system manages customers, drivers, shipments, deliveries, and shipment status updates while providing search functionality, validation, status-history auditing, dynamic shipping-fee calculation, and centralized exception handling.
 
-The project was developed using Java and Spring Boot with a layered architecture separating controllers, services, repositories, DTOs, models, and exception handling.
+The application follows a layered architecture that separates controllers, services, repositories, DTOs, models, and exception handling.
+
+---
 
 ## Features
 
@@ -16,7 +18,9 @@ The project was developed using Java and Spring Boot with a layered architecture
 - Driver management
 - Shipment management
 - Delivery management
-- Shipment search by recipient name and status
+- Shipment search
+- Search by recipient name
+- Search by shipment status
 - Shipment status updates
 - Shipment status history and audit logging
 - Dynamic shipping-fee calculation
@@ -25,24 +29,16 @@ The project was developed using Java and Spring Boot with a layered architecture
 - Centralized exception handling
 - RESTful API endpoints
 - MySQL database integration
-- OpenAPI / Swagger API documentation
-- Automated testing structure
+- OpenAPI / Swagger documentation
+- Automated controller and service testing
+
+---
 
 ## Shipping Fee Calculation
 
-The application calculates shipping fees dynamically according to the package weight.
+The application calculates shipping fees based on package weight.
 
-The current calculation is:
-
-**Shipping Fee = Base Fee + (Package Weight × Rate per kg)**
-
-Current values:
-
-- Base fee: `R50.00`
-- Rate per kilogram: `R12.50`
-
-For example, a package weighing `4 kg` would have a calculated shipping fee of:
+The current calculation uses:
 
 ```text
-R50.00 + (4 × R12.50)
-= R100.00
+Shipping Fee = Base Fee + (Package Weight × Rate per kg)
