@@ -34,6 +34,14 @@ The application follows a layered architecture that separates controllers, servi
 
 ---
 
+## Dashboard Preview
+
+The project includes a browser-based logistics management dashboard for monitoring and managing shipments.
+
+![Logistics Management Dashboard](dashboard.png)
+
+---
+
 ## Shipping Fee Calculation
 
 The application calculates shipping fees based on package weight.
