@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local config — never commit
+src/main/resources/application-local.properties
+.env
+
+# Build artifacts
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/

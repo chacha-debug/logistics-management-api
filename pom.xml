@@ -9,23 +9,11 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>demo</artifactId>
+	<artifactId>logistics-management-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+	<name>Logistics Management API</name>
+	<description>Spring Boot REST API for logistics management with shipment tracking, status history auditing, search, validation, and dynamic shipping-fee calculation.</description>
+	<url>https://github.com/chacha-debug/logistics-management-api</url>
 	<properties>
 		<java.version>26</java.version>
 	</properties>
