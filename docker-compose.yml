@@ -1,17 +1,18 @@
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: logistics-mysql
+  postgres:
+    image: postgres:17-alpine
+    container_name: logistics-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: DeliveryDB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: deliverydb
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,14 +22,14 @@ services:
     container_name: logistics-app
     restart: unless-stopped
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/DeliveryDB?createDatabaseIfNotExist=true&serverTimezone=UTC
-      DB_USERNAME: root
-      DB_PASSWORD: rootpass
+      DB_URL: jdbc:postgresql://postgres:5432/deliverydb
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
     ports:
       - "8080:8080"
 
 volumes:
-  mysql-data:
+  postgres-data:
