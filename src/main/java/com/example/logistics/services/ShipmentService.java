@@ -1,11 +1,13 @@
 package com.example.logistics.services;
 
+import com.example.logistics.dtos.ShipmentDetailDTO;
 import com.example.logistics.dtos.ShipmentRequestDTO;
 import com.example.logistics.dtos.ShipmentResponseDTO;
 import com.example.logistics.exceptions.ResourceNotFoundException;
 import com.example.logistics.models.Customer;
 import com.example.logistics.models.Driver;
 import com.example.logistics.models.Shipment;
+import com.example.logistics.models.ShipmentStatus;
 import com.example.logistics.models.ShipmentStatusHistory;
 import com.example.logistics.repositories.CustomerRepository;
 import com.example.logistics.repositories.DriverRepository;
@@ -57,6 +59,23 @@ public class ShipmentService {
         return convertToDTO(shipment);
     }
 
+    /**
+     * Returns a shipment with its full status history.
+     */
+    public ShipmentDetailDTO getShipmentDetails(Long id) {
+        Shipment shipment = shipmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with ID: " + id));
+
+        List<ShipmentDetailDTO.StatusHistoryEntry> history =
+                historyRepository.findByShipmentShipmentIdOrderByTimestampDesc(id)
+                        .stream()
+                        .map(h -> new ShipmentDetailDTO.StatusHistoryEntry(
+                                h.getStatus(), h.getTimestamp(), h.getRemarks()))
+                        .collect(Collectors.toList());
+
+        return new ShipmentDetailDTO(convertToDTO(shipment), history);
+    }
+
     @Transactional
     public ShipmentResponseDTO createShipment(ShipmentRequestDTO requestDTO) {
         Customer customer = customerRepository.findById(requestDTO.getCustomerId())
@@ -66,20 +85,24 @@ public class ShipmentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Driver not found with ID: " + requestDTO.getDriverId()));
 
+        String initialStatus = requestDTO.getCurrentStatus() != null
+                && ShipmentStatus.isValidStatus(requestDTO.getCurrentStatus())
+                ? requestDTO.getCurrentStatus()
+                : ShipmentStatus.PENDING;
+
         Shipment shipment = new Shipment();
         shipment.setCustomer(customer);
         shipment.setDriver(driver);
         shipment.setRecipientName(requestDTO.getRecipientName());
         shipment.setDeliveryAddress(requestDTO.getDeliveryAddress());
         shipment.setPackageWeight(requestDTO.getPackageWeight());
-        shipment.setCurrentStatus(requestDTO.getCurrentStatus() != null
-                ? requestDTO.getCurrentStatus() : "Pending");
+        shipment.setCurrentStatus(initialStatus);
 
         Shipment savedShipment = shipmentRepository.save(shipment);
 
         historyRepository.save(new ShipmentStatusHistory(
                 savedShipment,
-                savedShipment.getCurrentStatus(),
+                initialStatus,
                 LocalDateTime.now(),
                 "Shipment registered in system."
         ));
@@ -96,6 +119,15 @@ public class ShipmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with ID: " + shipmentId));
 
         String previousStatus = shipment.getCurrentStatus();
+
+        if (!ShipmentStatus.isValidStatus(newStatus)) {
+            throw new IllegalArgumentException("Unknown status: " + newStatus);
+        }
+        if (!ShipmentStatus.isValidTransition(previousStatus, newStatus)) {
+            throw new IllegalStateException(
+                    "Invalid transition from " + previousStatus + " to " + newStatus);
+        }
+
         shipment.setCurrentStatus(newStatus);
         Shipment updated = shipmentRepository.save(shipment);
 
@@ -107,6 +139,35 @@ public class ShipmentService {
         ));
 
         log.info("Shipment {} status changed: {} → {}", shipmentId, previousStatus, newStatus);
+
+        return convertToDTO(updated);
+    }
+
+    /**
+     * Reassigns a shipment to a different driver.
+     */
+    @Transactional
+    public ShipmentResponseDTO assignDriver(Long shipmentId, Long driverId) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with ID: " + shipmentId));
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + driverId));
+
+        Long previousDriverId = shipment.getDriver() != null
+                ? shipment.getDriver().getDriverId() : null;
+
+        shipment.setDriver(driver);
+        Shipment updated = shipmentRepository.save(shipment);
+
+        historyRepository.save(new ShipmentStatusHistory(
+                updated,
+                updated.getCurrentStatus(),
+                LocalDateTime.now(),
+                "Driver reassigned from #" + previousDriverId + " to #" + driverId
+                        + " (" + driver.getDriverName() + ")"
+        ));
+
+        log.info("Shipment {} reassigned from driver {} to {}", shipmentId, previousDriverId, driverId);
 
         return convertToDTO(updated);
     }
@@ -141,6 +202,10 @@ public class ShipmentService {
 
     private ShipmentResponseDTO convertToDTO(Shipment shipment) {
         BigDecimal fee = calculateFee(shipment.getPackageWeight());
+
+        Customer c = shipment.getCustomer();
+        Driver d = shipment.getDriver();
+
         return new ShipmentResponseDTO(
                 shipment.getShipmentId(),
                 shipment.getRecipientName(),
@@ -148,8 +213,13 @@ public class ShipmentService {
                 shipment.getPackageWeight(),
                 fee,
                 shipment.getCurrentStatus(),
-                shipment.getCustomer() != null ? shipment.getCustomer().getCustomerId() : null,
-                shipment.getDriver() != null ? shipment.getDriver().getDriverId() : null
+                shipment.getCreatedAt(),
+                c != null ? c.getCustomerId() : null,
+                c != null ? c.getFullName() : null,
+                c != null ? c.getEmail() : null,
+                d != null ? d.getDriverId() : null,
+                d != null ? d.getDriverName() : null,
+                d != null ? d.getVehicleType() : null
         );
     }
 }
