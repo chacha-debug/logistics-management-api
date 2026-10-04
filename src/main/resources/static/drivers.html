@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drivers - Logistics Management Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <a href="/" class="sidebar-brand">
+            <span class="sidebar-brand-icon"><i class="fas fa-truck-fast"></i></span>
+            <span>Logistics<span style="color:var(--brand)">Hub</span></span>
+        </a>
+        <ul class="sidebar-nav">
+            <li><a href="/"><i class="fas fa-gauge-high icon"></i>Dashboard</a></li>
+            <li><a href="/shipments.html"><i class="fas fa-box icon"></i>Shipments</a></li>
+            <li><a href="/customers.html"><i class="fas fa-users icon"></i>Customers</a></li>
+            <li><a href="/drivers.html" class="active"><i class="fas fa-id-card icon"></i>Drivers</a></li>
+            <li><a href="/track.html"><i class="fas fa-magnifying-glass-location icon"></i>Track Shipment</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/swagger-ui.html" target="_blank" style="color:var(--brand);text-decoration:none;">
+                <i class="fas fa-code"></i> API Docs
+            </a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="flex-center gap-2">
+                <button class="btn btn-ghost btn-icon" onclick="document.getElementById('sidebar').classList.toggle('open')" id="menuBtn" style="display:none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>Drivers</h1>
+                    <p>All drivers and their current workload</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>Driver Fleet</h2>
+                        <p id="driverCount">-</p>
+                    </div>
+                </div>
+                <div class="card-body-flush">
+                    <div id="loadingState" class="empty">
+                        <span class="spinner"></span>
+                        <p class="mt-2">Loading drivers...</p>
+                    </div>
+                    <div class="table-wrap hidden" id="tableWrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px">ID</th>
+                                    <th>Name</th>
+                                    <th>License</th>
+                                    <th>Vehicle</th>
+                                    <th>Availability</th>
+                                    <th class="text-right" style="width:140px">Active Shipments</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driverTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '/api';
+
+    async function load() {
+        const [dRes, sRes] = await Promise.all([
+            fetch(`${API}/drivers`),
+            fetch(`${API}/shipments`)
+        ]);
+        const drivers = await dRes.json();
+        const shipments = await sRes.json();
+
+        const activeByDriver = {};
+        shipments.forEach(s => {
+            if (s.currentStatus !== 'Delivered' && s.currentStatus !== 'Cancelled') {
+                activeByDriver[s.driverId] = (activeByDriver[s.driverId] || 0) + 1;
+            }
+        });
+
+        document.getElementById('driverCount').textContent = `${drivers.length} drivers`;
+        document.getElementById('driverTable').innerHTML = drivers.map(d => {
+            const avail = d.isAvailable;
+            const badge = avail
+                ? '<span class="badge badge-delivered"><span class="badge-dot"></span>Available</span>'
+                : '<span class="badge badge-cancelled"><span class="badge-dot"></span>Unavailable</span>';
+            return `
+                <tr>
+                    <td class="table-cell-mono">#${String(d.driverId).padStart(3, '0')}</td>
+                    <td class="table-cell-primary">${d.driverName}</td>
+                    <td class="text-muted">${d.licenseNumber}</td>
+                    <td>${d.vehicleType}</td>
+                    <td>${badge}</td>
+                    <td class="text-right"><strong>${activeByDriver[d.driverId] || 0}</strong></td>
+                </tr>`;
+        }).join('');
+
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('tableWrap').classList.remove('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.innerWidth <= 900) document.getElementById('menuBtn').style.display = 'inline-flex';
+        load();
+    });
+</script>
+
+</body>
+</html>

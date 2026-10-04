@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Shipment - LogisticsHub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+    .track-hero {
+        max-width: 640px;
+        margin: 3rem auto;
+        text-align: center;
+    }
+    .track-hero h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+    }
+    .track-hero p {
+        color: var(--muted);
+        margin-bottom: 2rem;
+    }
+    .track-input-group {
+        display: flex;
+        gap: 0.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 0.5rem;
+        box-shadow: var(--sh-md);
+        max-width: 520px;
+        margin: 0 auto;
+    }
+    .track-input-group input {
+        flex: 1;
+        border: none;
+        padding: 0.85rem 1rem;
+        font-size: 1rem;
+        font-family: inherit;
+        background: transparent;
+    }
+    .track-input-group input:focus { outline: none; }
+    .track-input-group button {
+        padding: 0.85rem 1.5rem;
+        border: none;
+        background: var(--brand);
+        color: white;
+        border-radius: var(--r-md);
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-family: inherit;
+    }
+    .track-input-group button:hover { background: var(--brand-dark); }
+    .track-result {
+        max-width: 720px;
+        margin: 2rem auto;
+    }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <a href="/" class="sidebar-brand">
+            <span class="sidebar-brand-icon"><i class="fas fa-truck-fast"></i></span>
+            <span>Logistics<span style="color:var(--brand)">Hub</span></span>
+        </a>
+        <ul class="sidebar-nav">
+            <li><a href="/"><i class="fas fa-gauge-high icon"></i>Dashboard</a></li>
+            <li><a href="/shipments.html"><i class="fas fa-box icon"></i>Shipments</a></li>
+            <li><a href="/customers.html"><i class="fas fa-users icon"></i>Customers</a></li>
+            <li><a href="/drivers.html"><i class="fas fa-id-card icon"></i>Drivers</a></li>
+            <li><a href="/track.html" class="active"><i class="fas fa-magnifying-glass-location icon"></i>Track Shipment</a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="flex-center gap-2">
+                <button class="btn btn-ghost btn-icon" onclick="document.getElementById('sidebar').classList.toggle('open')" id="menuBtn" style="display:none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>Track Shipment</h1>
+                    <p>Enter a shipment ID to view its current status</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="track-hero">
+                <h1>Where's my package?</h1>
+                <p>Enter the shipment ID to see real-time status and history</p>
+                <div class="track-input-group">
+                    <input type="text" id="trackInput" placeholder="e.g. 3 or 0003" onkeypress="if(event.key==='Enter') track()">
+                    <button onclick="track()"><i class="fas fa-search"></i> Track</button>
+                </div>
+            </div>
+
+            <div id="resultArea" class="track-result"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '/api';
+
+    function badgeClass(status) {
+        const map = {
+            'Pending': 'badge-pending', 'Confirmed': 'badge-confirmed',
+            'In Transit': 'badge-in-transit', 'Out for Delivery': 'badge-out',
+            'Delivered': 'badge-delivered', 'Cancelled': 'badge-cancelled'
+        };
+        return map[status] || 'badge-pending';
+    }
+
+    function formatDate(iso, withTime = false) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        const opts = { day: '2-digit', month: 'short', year: 'numeric' };
+        if (withTime) { opts.hour = '2-digit'; opts.minute = '2-digit'; }
+        return d.toLocaleDateString('en-ZA', opts);
+    }
+
+    async function track() {
+        const raw = document.getElementById('trackInput').value.trim();
+        if (!raw) return;
+        const id = parseInt(raw.replace(/^0+/, '') || raw, 10);
+
+        const area = document.getElementById('resultArea');
+        area.innerHTML = '<div class="empty"><span class="spinner"></span><p class="mt-2">Looking up shipment...</p></div>';
+
+        try {
+            const res = await fetch(`${API}/shipments/${id}/details`);
+            if (!res.ok) {
+                area.innerHTML = `
+                    <div class="card" style="text-align:center">
+                        <div class="card-body">
+                            <div class="empty-icon" style="color:var(--danger)"><i class="fas fa-circle-exclamation"></i></div>
+                            <p>No shipment found with ID <strong>#${String(id).padStart(4, '0')}</strong></p>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const data = await res.json();
+            renderResult(data);
+        } catch (err) {
+            area.innerHTML = '<div class="empty"><p>Could not connect. Try again.</p></div>';
+        }
+    }
+
+    function renderResult(data) {
+        const s = data.shipment;
+        const ordered = [...data.statusHistory].reverse();
+
+        document.getElementById('resultArea').innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>Shipment #${String(s.shipmentId).padStart(4, '0')}</h2>
+                        <p>To: ${s.recipientName}</p>
+                    </div>
+                    <span class="badge ${badgeClass(s.currentStatus)}">
+                        <span class="badge-dot"></span>${s.currentStatus}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        ${ordered.map((h, i) => {
+                            const isLast = i === ordered.length - 1;
+                            return `
+                                <div class="timeline-item ${isLast ? 'is-current' : 'is-complete'}">
+                                    <div class="timeline-status">${h.status}</div>
+                                    <div class="timeline-time">${formatDate(h.timestamp, true)}</div>
+                                    ${h.remarks ? `<div class="timeline-remarks">${h.remarks}</div>` : ''}
+                                </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.innerWidth <= 900) document.getElementById('menuBtn').style.display = 'inline-flex';
+        // Support ?id=3 or ?tracking=3 in URL
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id') || params.get('tracking');
+        if (id) {
+            document.getElementById('trackInput').value = id;
+            track();
+        }
+    });
+</script>
+
+</body>
+</html>

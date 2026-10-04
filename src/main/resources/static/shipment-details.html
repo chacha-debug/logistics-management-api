@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipment Details - Logistics Management Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        align-items: flex-start;
+    }
+    @media (max-width: 900px) {
+        .detail-grid { grid-template-columns: 1fr; }
+    }
+
+    .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 1.25rem;
+        box-shadow: var(--sh-sm);
+        margin-bottom: 1rem;
+    }
+
+    .info-card h3 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 1rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+    }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .info-label { color: var(--muted); }
+    .info-value { color: var(--ink); font-weight: 500; text-align: right; }
+
+    .hero-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 1.5rem;
+        box-shadow: var(--sh-sm);
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-top: 0.25rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .section-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-bar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <a href="/" class="sidebar-brand">
+            <span class="sidebar-brand-icon"><i class="fas fa-truck-fast"></i></span>
+            <span>Logistics<span style="color:var(--brand)">Hub</span></span>
+        </a>
+        <ul class="sidebar-nav">
+            <li><a href="/"><i class="fas fa-gauge-high icon"></i>Dashboard</a></li>
+            <li><a href="/shipments.html"><i class="fas fa-box icon"></i>Shipments</a></li>
+            <li><a href="/customers.html"><i class="fas fa-users icon"></i>Customers</a></li>
+            <li><a href="/drivers.html"><i class="fas fa-id-card icon"></i>Drivers</a></li>
+            <li><a href="/track.html"><i class="fas fa-magnifying-glass-location icon"></i>Track Shipment</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/swagger-ui.html" target="_blank" style="color:var(--brand);text-decoration:none;">
+                <i class="fas fa-code"></i> API Docs
+            </a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="flex-center gap-2">
+                <button class="btn btn-ghost btn-icon" onclick="document.getElementById('sidebar').classList.toggle('open')" id="menuBtn" style="display:none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1 id="pageTitle">Shipment Details</h1>
+                    <p><a href="/" style="color:var(--muted);text-decoration:none;"><i class="fas fa-arrow-left"></i> Back to Dashboard</a></p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+
+            <!-- Loading -->
+            <div id="loadingState" class="empty">
+                <span class="spinner"></span>
+                <p class="mt-2">Loading shipment...</p>
+            </div>
+
+            <!-- Error -->
+            <div id="errorState" class="empty hidden">
+                <div class="empty-icon"><i class="fas fa-circle-exclamation"></i></div>
+                <p id="errorMessage">Could not load shipment</p>
+            </div>
+
+            <!-- Content -->
+            <div id="detailContent" class="hidden">
+
+                <!-- Hero -->
+                <div class="hero-card">
+                    <div>
+                        <div class="hero-subtitle">Shipment</div>
+                        <div class="hero-title" id="heroId">#0000</div>
+                        <div class="hero-subtitle" id="heroRecipient">Recipient name</div>
+                    </div>
+                    <div style="text-align:right">
+                        <span class="badge" id="heroStatus">Pending</span>
+                        <div class="hero-subtitle" id="heroFee">R0.00</div>
+                    </div>
+                </div>
+
+                <!-- Action bar -->
+                <div class="action-bar">
+                    <button class="btn btn-primary" onclick="openStatusModal()">
+                        <i class="fas fa-arrows-rotate"></i> Update Status
+                    </button>
+                    <button class="btn btn-secondary" onclick="openDriverModal()">
+                        <i class="fas fa-user-plus"></i> Reassign Driver
+                    </button>
+                </div>
+
+                <!-- Grid -->
+                <div class="detail-grid">
+
+                    <!-- Left: timeline -->
+                    <div>
+                        <div class="info-card">
+                            <div class="section-title">
+                                <i class="fas fa-clock-rotate-left" style="color:var(--brand)"></i>
+                                Status Timeline
+                            </div>
+                            <div class="timeline" id="timeline"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right: info cards -->
+                    <div>
+                        <div class="info-card">
+                            <h3><i class="fas fa-user"></i> Customer</h3>
+                            <div class="info-row">
+                                <span class="info-label">Name</span>
+                                <span class="info-value" id="custName">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Email</span>
+                                <span class="info-value" id="custEmail">-</span>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-id-card"></i> Driver</h3>
+                            <div class="info-row">
+                                <span class="info-label">Name</span>
+                                <span class="info-value" id="drvName">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Vehicle</span>
+                                <span class="info-value" id="drvVehicle">-</span>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-box"></i> Delivery</h3>
+                            <div class="info-row">
+                                <span class="info-label">Recipient</span>
+                                <span class="info-value" id="dRecipient">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Address</span>
+                                <span class="info-value" id="dAddress">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Weight</span>
+                                <span class="info-value" id="dWeight">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Shipping Fee</span>
+                                <span class="info-value" id="dFee">-</span>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3><i class="fas fa-calendar"></i> Dates</h3>
+                            <div class="info-row">
+                                <span class="info-label">Created</span>
+                                <span class="info-value" id="dCreated">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- STATUS UPDATE MODAL -->
+<div class="modal-backdrop" id="statusModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Update Status</h3>
+            <button class="modal-close" onclick="closeModal('statusModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="label">New Status</label>
+                <select class="select" id="newStatus" style="width:100%"></select>
+            </div>
+            <div class="form-group">
+                <label class="label">Remarks (optional)</label>
+                <input type="text" class="input" id="statusRemarks" style="width:100%" placeholder="e.g. Package picked up by driver">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('statusModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitStatusUpdate()">
+                <i class="fas fa-check"></i> Update Status
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- DRIVER ASSIGN MODAL -->
+<div class="modal-backdrop" id="driverModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Reassign Driver</h3>
+            <button class="modal-close" onclick="closeModal('driverModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="label">Select Driver</label>
+                <select class="select" id="newDriverSelect" style="width:100%"></select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('driverModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitDriverChange()">
+                <i class="fas fa-check"></i> Assign Driver
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    const API = '/api';
+    const shipmentId = new URLSearchParams(window.location.search).get('id');
+    let currentShipment = null;
+
+    // Valid status transitions (mirror of backend ShipmentStatus.java)
+    const TRANSITIONS = {
+        'Pending': ['Confirmed', 'Cancelled'],
+        'Confirmed': ['In Transit', 'Cancelled'],
+        'In Transit': ['Out for Delivery', 'Cancelled'],
+        'Out for Delivery': ['Delivered', 'Cancelled'],
+        'Delivered': [],
+        'Cancelled': []
+    };
+
+    function badgeClass(status) {
+        const map = {
+            'Pending': 'badge-pending',
+            'Confirmed': 'badge-confirmed',
+            'In Transit': 'badge-in-transit',
+            'Out for Delivery': 'badge-out',
+            'Delivered': 'badge-delivered',
+            'Cancelled': 'badge-cancelled'
+        };
+        return map[status] || 'badge-pending';
+    }
+
+    function formatDate(iso, withTime = false) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        const opts = { day: '2-digit', month: 'short', year: 'numeric' };
+        if (withTime) { opts.hour = '2-digit'; opts.minute = '2-digit'; }
+        return d.toLocaleDateString('en-ZA', opts);
+    }
+
+    function formatMoney(v) { return 'R' + Number(v).toFixed(2); }
+
+    function showToast(type, title, msg) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div style="flex:1">
+                <div class="toast-title">${title}</div>
+                ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+            </div>
+            <button class="modal-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+        document.getElementById('toastContainer').appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function openModal(id)  { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // -------- Load shipment --------
+    async function loadShipment() {
+        try {
+            const res = await fetch(`${API}/shipments/${shipmentId}/details`);
+            if (!res.ok) throw new Error('Shipment not found');
+            const data = await res.json();
+            currentShipment = data.shipment;
+            renderDetail(data);
+        } catch (err) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = err.message;
+        }
+    }
+
+    function renderDetail(data) {
+        const s = data.shipment;
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('detailContent').classList.remove('hidden');
+
+        document.getElementById('pageTitle').textContent = `Shipment #${String(s.shipmentId).padStart(4, '0')}`;
+        document.getElementById('heroId').textContent = `#${String(s.shipmentId).padStart(4, '0')}`;
+        document.getElementById('heroRecipient').textContent = s.recipientName;
+        document.getElementById('heroFee').textContent = formatMoney(s.shippingFee);
+
+        const statusBadge = document.getElementById('heroStatus');
+        statusBadge.className = `badge ${badgeClass(s.currentStatus)}`;
+        statusBadge.innerHTML = `<span class="badge-dot"></span>${s.currentStatus}`;
+
+        document.getElementById('custName').textContent = s.customerName || '-';
+        document.getElementById('custEmail').textContent = s.customerEmail || '-';
+        document.getElementById('drvName').textContent = s.driverName || '-';
+        document.getElementById('drvVehicle').textContent = s.vehicleType || '-';
+        document.getElementById('dRecipient').textContent = s.recipientName;
+        document.getElementById('dAddress').textContent = s.deliveryAddress;
+        document.getElementById('dWeight').textContent = `${s.packageWeight} kg`;
+        document.getElementById('dFee').textContent = formatMoney(s.shippingFee);
+        document.getElementById('dCreated').textContent = formatDate(s.createdAt, true);
+
+        renderTimeline(data.statusHistory);
+    }
+
+    function renderTimeline(history) {
+        const t = document.getElementById('timeline');
+        if (!history || history.length === 0) {
+            t.innerHTML = '<p class="text-muted text-sm">No history yet</p>';
+            return;
+        }
+
+        // history is newest first from the API — reverse to show oldest → newest
+        const ordered = [...history].reverse();
+        t.innerHTML = ordered.map((h, i) => {
+            const isLast = i === ordered.length - 1;
+            const cls = isLast ? 'is-current' : 'is-complete';
+            return `
+                <div class="timeline-item ${cls}">
+                    <div class="timeline-status">${h.status}</div>
+                    <div class="timeline-time">${formatDate(h.timestamp, true)}</div>
+                    ${h.remarks ? `<div class="timeline-remarks">${h.remarks}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // -------- Status update --------
+    function openStatusModal() {
+        if (!currentShipment) return;
+
+        const current = currentShipment.currentStatus;
+        const available = TRANSITIONS[current] || [];
+
+        const sel = document.getElementById('newStatus');
+        if (available.length === 0) {
+            sel.innerHTML = '<option value="">No further transitions available</option>';
+        } else {
+            sel.innerHTML = '<option value="">Select new status</option>' +
+                available.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        document.getElementById('statusRemarks').value = '';
+        openModal('statusModal');
+    }
+
+    async function submitStatusUpdate() {
+        const newStatus = document.getElementById('newStatus').value;
+        const remarks = document.getElementById('statusRemarks').value;
+
+        if (!newStatus) {
+            showToast('warning', 'Select a status', 'Please choose a new status');
+            return;
+        }
+
+        try {
+            const res = await fetch(
+                `${API}/shipments/${shipmentId}/status?status=${encodeURIComponent(newStatus)}&remarks=${encodeURIComponent(remarks)}`,
+                { method: 'PATCH' }
+            );
+
+            if (res.ok) {
+                closeModal('statusModal');
+                showToast('success', 'Status updated', `Now: ${newStatus}`);
+                await loadShipment();
+            } else {
+                const err = await res.json();
+                showToast('error', 'Update failed', err.detail || 'Could not update status');
+            }
+        } catch (err) {
+            showToast('error', 'Network error', 'Could not reach the server');
+        }
+    }
+
+    // -------- Driver reassignment --------
+    async function openDriverModal() {
+        const res = await fetch(`${API}/drivers`);
+        const data = await res.json();
+
+        const sel = document.getElementById('newDriverSelect');
+        sel.innerHTML = '<option value="">Select a driver</option>' +
+            data.filter(d => d.isAvailable).map(d =>
+                `<option value="${d.driverId}" ${currentShipment.driverId === d.driverId ? 'selected' : ''}>
+                    ${d.driverName} - ${d.vehicleType}
+                </option>`
+            ).join('');
+
+        openModal('driverModal');
+    }
+
+    async function submitDriverChange() {
+        const driverId = document.getElementById('newDriverSelect').value;
+        if (!driverId) {
+            showToast('warning', 'Select a driver', 'Please choose a driver');
+            return;
+        }
+
+        try {
+            const res = await fetch(
+                `${API}/shipments/${shipmentId}/assign-driver?driverId=${driverId}`,
+                { method: 'PATCH' }
+            );
+
+            if (res.ok) {
+                closeModal('driverModal');
+                showToast('success', 'Driver reassigned', '');
+                await loadShipment();
+            } else {
+                const err = await res.json();
+                showToast('error', 'Failed', err.detail || 'Could not assign driver');
+            }
+        } catch (err) {
+            showToast('error', 'Network error', 'Could not reach the server');
+        }
+    }
+
+    // -------- Init --------
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!shipmentId) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = 'No shipment ID specified';
+            return;
+        }
+        if (window.innerWidth <= 900) {
+            document.getElementById('menuBtn').style.display = 'inline-flex';
+        }
+        loadShipment();
+    });
+</script>
+
+</body>
+</html>

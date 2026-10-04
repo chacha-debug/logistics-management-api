@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customers - Logistics Management Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <a href="/" class="sidebar-brand">
+            <span class="sidebar-brand-icon"><i class="fas fa-truck-fast"></i></span>
+            <span>Logistics<span style="color:var(--brand)">Hub</span></span>
+        </a>
+        <ul class="sidebar-nav">
+            <li><a href="/"><i class="fas fa-gauge-high icon"></i>Dashboard</a></li>
+            <li><a href="/shipments.html"><i class="fas fa-box icon"></i>Shipments</a></li>
+            <li><a href="/customers.html" class="active"><i class="fas fa-users icon"></i>Customers</a></li>
+            <li><a href="/drivers.html"><i class="fas fa-id-card icon"></i>Drivers</a></li>
+            <li><a href="/track.html"><i class="fas fa-magnifying-glass-location icon"></i>Track Shipment</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/swagger-ui.html" target="_blank" style="color:var(--brand);text-decoration:none;">
+                <i class="fas fa-code"></i> API Docs
+            </a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="flex-center gap-2">
+                <button class="btn btn-ghost btn-icon" onclick="document.getElementById('sidebar').classList.toggle('open')" id="menuBtn" style="display:none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>Customers</h1>
+                    <p>All registered customers and their shipment activity</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>Customer Directory</h2>
+                        <p id="customerCount">-</p>
+                    </div>
+                    <input type="text" class="input" id="searchInput" placeholder="Search by name or email..." style="width:260px">
+                </div>
+                <div class="card-body-flush">
+                    <div id="loadingState" class="empty">
+                        <span class="spinner"></span>
+                        <p class="mt-2">Loading customers...</p>
+                    </div>
+                    <div class="table-wrap hidden" id="tableWrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px">ID</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th class="text-right" style="width:140px">Shipments</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customerTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    const API = '/api';
+    let allCustomers = [];
+    let shipmentsByCustomer = {};
+
+    async function load() {
+        const [cRes, sRes] = await Promise.all([
+            fetch(`${API}/customers`),
+            fetch(`${API}/shipments`)
+        ]);
+        allCustomers = await cRes.json();
+        const shipments = await sRes.json();
+
+        // Count shipments per customer
+        shipmentsByCustomer = {};
+        shipments.forEach(s => {
+            shipmentsByCustomer[s.customerId] = (shipmentsByCustomer[s.customerId] || 0) + 1;
+        });
+
+        document.getElementById('customerCount').textContent = `${allCustomers.length} customers`;
+        render(allCustomers);
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('tableWrap').classList.remove('hidden');
+    }
+
+    function render(data) {
+        document.getElementById('customerTable').innerHTML = data.map(c => `
+            <tr>
+                <td class="table-cell-mono">#${String(c.customerId).padStart(3, '0')}</td>
+                <td class="table-cell-primary">${c.fullName}</td>
+                <td>${c.email}</td>
+                <td class="text-muted">${c.phoneNumber || '-'}</td>
+                <td class="text-right"><strong>${shipmentsByCustomer[c.customerId] || 0}</strong></td>
+            </tr>`).join('');
+    }
+
+    document.getElementById('searchInput').addEventListener('input', e => {
+        const q = e.target.value.toLowerCase().trim();
+        render(q ? allCustomers.filter(c =>
+            c.fullName.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)) : allCustomers);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.innerWidth <= 900) document.getElementById('menuBtn').style.display = 'inline-flex';
+        load();
+    });
+</script>
+
+</body>
+</html>

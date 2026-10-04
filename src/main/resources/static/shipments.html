@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Shipments - Logistics Management Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <a href="/" class="sidebar-brand">
+            <span class="sidebar-brand-icon"><i class="fas fa-truck-fast"></i></span>
+            <span>Logistics<span style="color:var(--brand)">Hub</span></span>
+        </a>
+        <ul class="sidebar-nav">
+            <li><a href="/"><i class="fas fa-gauge-high icon"></i>Dashboard</a></li>
+            <li><a href="/shipments.html" class="active"><i class="fas fa-box icon"></i>Shipments</a></li>
+            <li><a href="/customers.html"><i class="fas fa-users icon"></i>Customers</a></li>
+            <li><a href="/drivers.html"><i class="fas fa-id-card icon"></i>Drivers</a></li>
+            <li><a href="/track.html"><i class="fas fa-magnifying-glass-location icon"></i>Track Shipment</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/swagger-ui.html" target="_blank" style="color:var(--brand);text-decoration:none;">
+                <i class="fas fa-code"></i> API Docs
+            </a>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="flex-center gap-2">
+                <button class="btn btn-ghost btn-icon" onclick="document.getElementById('sidebar').classList.toggle('open')" id="menuBtn" style="display:none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>All Shipments</h1>
+                    <p>Complete list of every shipment in the system</p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="openNewShipment()">
+                    <i class="fas fa-plus"></i> New Shipment
+                </button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>Shipments</h2>
+                        <p id="shipmentCount">-</p>
+                    </div>
+                    <div class="flex-center gap-2">
+                        <input type="text" class="input" id="searchInput" placeholder="Search recipient, customer, ID..." style="width:240px">
+                        <select class="select" id="statusFilter">
+                            <option value="">All Statuses</option>
+                            <option>Pending</option>
+                            <option>Confirmed</option>
+                            <option>In Transit</option>
+                            <option>Out for Delivery</option>
+                            <option>Delivered</option>
+                            <option>Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card-body-flush">
+                    <div id="loadingState" class="empty">
+                        <span class="spinner"></span>
+                        <p class="mt-2">Loading...</p>
+                    </div>
+                    <div id="emptyState" class="empty hidden">
+                        <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+                        <p>No shipments match your filters</p>
+                    </div>
+                    <div class="table-wrap hidden" id="tableWrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px">ID</th>
+                                    <th>Recipient</th>
+                                    <th>Customer</th>
+                                    <th>Driver</th>
+                                    <th>Weight</th>
+                                    <th>Fee</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shipmentTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="newShipmentModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Create New Shipment</h3>
+            <button class="modal-close" onclick="closeModal('newShipmentModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="newShipmentForm" onsubmit="submitNewShipment(event)">
+                <div class="form-group">
+                    <label class="label">Customer *</label>
+                    <select class="select" id="newCustomer" required style="width:100%"></select>
+                </div>
+                <div class="form-group">
+                    <label class="label">Driver *</label>
+                    <select class="select" id="newDriver" required style="width:100%"></select>
+                </div>
+                <div class="form-group">
+                    <label class="label">Recipient Name *</label>
+                    <input type="text" class="input" id="newRecipient" required style="width:100%">
+                </div>
+                <div class="form-group">
+                    <label class="label">Delivery Address *</label>
+                    <input type="text" class="input" id="newAddress" required style="width:100%">
+                </div>
+                <div class="form-group">
+                    <label class="label">Package Weight (kg) *</label>
+                    <input type="number" step="0.01" min="0.1" class="input" id="newWeight" required style="width:100%">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('newShipmentModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="document.getElementById('newShipmentForm').requestSubmit()">
+                <i class="fas fa-check"></i> Save Shipment
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    const API = '/api';
+    let allShipments = [];
+
+    function badgeClass(status) {
+        const map = {
+            'Pending': 'badge-pending', 'Confirmed': 'badge-confirmed',
+            'In Transit': 'badge-in-transit', 'Out for Delivery': 'badge-out',
+            'Delivered': 'badge-delivered', 'Cancelled': 'badge-cancelled'
+        };
+        return map[status] || 'badge-pending';
+    }
+
+    function formatDate(iso) {
+        if (!iso) return '-';
+        return new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function formatMoney(v) { return 'R' + Number(v).toFixed(2); }
+
+    function showToast(type, title, msg) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<div style="flex:1"><div class="toast-title">${title}</div>${msg ? `<div class="toast-msg">${msg}</div>` : ''}</div><button class="modal-close" onclick="this.parentElement.remove()">&times;</button>`;
+        document.getElementById('toastContainer').appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function openModal(id)  { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    async function load() {
+        const res = await fetch(`${API}/shipments`);
+        allShipments = await res.json();
+        document.getElementById('shipmentCount').textContent = `${allShipments.length} total shipments`;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q = document.getElementById('searchInput').value.toLowerCase().trim();
+        const status = document.getElementById('statusFilter').value;
+
+        let filtered = allShipments;
+        if (q) filtered = filtered.filter(s =>
+            s.recipientName.toLowerCase().includes(q) ||
+            (s.customerName || '').toLowerCase().includes(q) ||
+            (s.driverName || '').toLowerCase().includes(q) ||
+            String(s.shipmentId).includes(q));
+        if (status) filtered = filtered.filter(s => s.currentStatus === status);
+
+        render(filtered);
+    }
+
+    function render(data) {
+        document.getElementById('loadingState').classList.add('hidden');
+        const empty = document.getElementById('emptyState');
+        const wrap = document.getElementById('tableWrap');
+
+        if (data.length === 0) {
+            empty.classList.remove('hidden');
+            wrap.classList.add('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+        wrap.classList.remove('hidden');
+
+        document.getElementById('shipmentTable').innerHTML = data.map(s => `
+            <tr onclick="window.location.href='/shipment-details.html?id=${s.shipmentId}'">
+                <td class="table-cell-mono">#${String(s.shipmentId).padStart(4, '0')}</td>
+                <td class="table-cell-primary">${s.recipientName}</td>
+                <td>${s.customerName || '-'}</td>
+                <td>${s.driverName || '-'}</td>
+                <td>${s.packageWeight} kg</td>
+                <td>${formatMoney(s.shippingFee)}</td>
+                <td><span class="badge ${badgeClass(s.currentStatus)}"><span class="badge-dot"></span>${s.currentStatus}</span></td>
+                <td class="text-muted">${formatDate(s.createdAt)}</td>
+            </tr>`).join('');
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+    async function openNewShipment() {
+        openModal('newShipmentModal');
+        const [cRes, dRes] = await Promise.all([
+            fetch(`${API}/customers`), fetch(`${API}/drivers`)
+        ]);
+        const customers = await cRes.json();
+        const drivers = await dRes.json();
+        document.getElementById('newCustomer').innerHTML =
+            '<option value="">Select a customer</option>' +
+            customers.map(c => `<option value="${c.customerId}">${c.fullName} (${c.email})</option>`).join('');
+        document.getElementById('newDriver').innerHTML =
+            '<option value="">Select a driver</option>' +
+            drivers.filter(d => d.isAvailable).map(d =>
+                `<option value="${d.driverId}">${d.driverName} - ${d.vehicleType}</option>`).join('');
+    }
+
+    async function submitNewShipment(e) {
+        e.preventDefault();
+        const payload = {
+            customerId: parseInt(document.getElementById('newCustomer').value),
+            driverId: parseInt(document.getElementById('newDriver').value),
+            recipientName: document.getElementById('newRecipient').value,
+            deliveryAddress: document.getElementById('newAddress').value,
+            packageWeight: parseFloat(document.getElementById('newWeight').value),
+            currentStatus: 'Pending'
+        };
+        const res = await fetch(`${API}/shipments`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            closeModal('newShipmentModal');
+            document.getElementById('newShipmentForm').reset();
+            showToast('success', 'Shipment created', payload.recipientName);
+            await load();
+        } else {
+            const err = await res.json();
+            showToast('error', 'Failed', err.detail || 'Validation failed');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.innerWidth <= 900) document.getElementById('menuBtn').style.display = 'inline-flex';
+        load();
+    });
+</script>
+
+</body>
+</html>
