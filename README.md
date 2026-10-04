@@ -1,229 +1,204 @@
-# Logistics Management API
+# Logistics Management Platform
 
 **🔗 Live demo: [logistics-api-4rr3.onrender.com](https://logistics-api-4rr3.onrender.com)**
 
-A Spring Boot REST API for managing logistics operations, including customers, drivers, shipments, deliveries, shipment status updates, status history auditing, and shipping-fee calculation.
+A full-stack logistics management platform built with Spring Boot and PostgreSQL. It handles customer, driver, and shipment management with status workflows, audit trails, driver assignment, dynamic shipping-fee calculation, and a modern admin dashboard.
 
-## Overview
+---
 
-The Logistics Management API is a backend application designed to support core logistics operations through RESTful endpoints.
+## Screenshots
 
-The system manages customers, drivers, shipments, deliveries, and shipment status updates while providing search functionality, validation, status-history auditing, dynamic shipping-fee calculation, and centralized exception handling.
+### Admin Dashboard
 
-The application follows a layered architecture that separates controllers, services, repositories, DTOs, models, and exception handling.
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Shipment Details with Status Timeline
+
+![Shipment Details](docs/screenshots/shipment-details.png)
+
+### Customer Directory
+
+![Customers](docs/screenshots/customers.png)
 
 ---
 
 ## Features
 
-- Customer management
-- Driver management
-- Shipment management
-- Delivery management
-- Shipment search
-- Search by recipient name
-- Search by shipment status
-- Shipment status updates
-- Shipment status history and audit logging
-- Dynamic shipping-fee calculation
-- Request and response DTOs
-- Input validation
-- Centralized exception handling
-- RESTful API endpoints
-- MySQL database integration
-- OpenAPI / Swagger documentation
-- Automated controller and service testing
+### Backend
+
+- **Customer management** — full CRUD with search
+- **Driver management** — availability tracking
+- **Shipment management** — with enriched responses (customer name, driver name, vehicle type)
+- **Status workflow** with validated transitions (Pending → Confirmed → In Transit → Out for Delivery → Delivered, plus Cancelled)
+- **Status history & audit trail** — every status change is recorded with timestamp and remarks
+- **Driver assignment** — reassign any shipment to a different driver
+- **Dynamic shipping-fee calculation** — `Base Fee + (Weight × Rate per kg)`
+- **Request/response DTOs** — clean API contracts
+- **Input validation** — Jakarta Validation on all request bodies
+- **RFC 7807 error responses** — proper 400/404/409/500 with typed payloads
+- **OpenAPI / Swagger** — full API documentation
+- **Automated tests** — controller and service-layer coverage
+
+### Frontend (Admin Dashboard)
+
+- **KPI dashboard** — total, delivered, in transit, pending, cancelled
+- **Shipment volume chart** — 7-day activity
+- **Delivery rate ring** — animated progress visualisation
+- **Search & filter** — by recipient, customer, driver, or status
+- **Shipment details page** — full timeline, customer/driver info
+- **Customer directory** — with per-customer shipment counts
+- **Driver fleet view** — with availability and active shipment counts
+- **Public tracking page** — enter a shipment ID, see live status
+- **Responsive layout** — works on desktop and mobile
 
 ---
 
-## Dashboard Preview
+## Screenshots Location
 
-The project includes a browser-based logistics management dashboard for monitoring and managing shipments.
-
-![Logistics Management Dashboard](dashboard.png)
-
----
-
-## Shipping Fee Calculation
-
-The application calculates shipping fees based on package weight.
-
-The current calculation uses:
-
-```text
-Shipping Fee = Base Fee + (Package Weight × Rate per kg)
-````
-
-Current values:
-
-```text
-Base Fee: R50.00
-Rate per kg: R12.50
-```
-
-For example, a package weighing 4 kg would have:
-
-```text
-R50.00 + (4 × R12.50) = R100.00
-```
-
-The calculation is handled within the shipment service layer.
-
----
-
-## Shipment Status Tracking
-
-The system supports shipment status updates and maintains a history of status changes.
-
-When a shipment status is updated, the application updates the shipment's current status and records the corresponding status update.
-
-The system also maintains shipment status history for auditing purposes.
-
----
-
-## Search Functionality
-
-Shipments can be searched using different criteria, including:
-
-* Recipient name
-* Shipment status
-* Combined search criteria
-
-This allows users to locate shipments without retrieving the entire dataset.
+Screenshots are stored in `docs/screenshots/`. See [docs/screenshots/README.md](docs/screenshots/README.md) for instructions on regenerating them.
 
 ---
 
 ## Architecture
 
-The application follows a layered backend architecture:
-
 ```text
-                 Client
-                   │
-                   ▼
-          REST Controllers
-                   │
-                   ▼
-              DTO Layer
-                   │
-                   ▼
-             Service Layer
-                   │
-                   ▼
-           Repository Layer
-                   │
-                   ▼
-             MySQL Database
+                       Client (Browser)
+                              │
+                              ▼
+                    REST Controllers
+                              │
+                              ▼
+                         DTO Layer
+                              │
+                              ▼
+                        Service Layer
+                              │
+                              ▼
+                      Repository Layer
+                              │
+                              ▼
+                      PostgreSQL Database
 ```
 
-### Controllers
+### Layers
 
-The controller layer handles incoming HTTP requests and exposes REST endpoints.
+**Controllers** — REST endpoints:
 
-Current controllers include:
+- `CustomerController`
+- `DeliveryController`
+- `DriverController`
+- `ShipmentController`
+- `StatusUpdateController`
 
-* `CustomerController`
-* `DeliveryController`
-* `DriverController`
-* `ShipmentController`
-* `StatusUpdateController`
+**Services** — business logic:
 
-### Services
+- `ShipmentService` — shipments, status transitions, driver assignment, fee calculation
+- `StatusUpdateService` — status history operations
 
-The service layer contains business logic and coordinates operations between controllers and repositories.
+**DTOs** — request/response contracts:
 
-Current services include:
+- `ShipmentRequestDTO`, `ShipmentResponseDTO`
+- `ShipmentDetailDTO` — includes status history
 
-* `ShipmentService`
-* `StatusUpdateService`
+**Repositories** — Spring Data JPA interfaces:
 
-### DTOs
+- `CustomerRepository`, `DeliveryRepository`, `DriverRepository`
+- `ShipmentRepository`, `ShipmentStatusHistoryRepository`, `StatusUpdateRepository`
 
-The application uses Data Transfer Objects to control the data exchanged through the API.
+**Exceptions** — centralised handling:
 
-* `ShipmentRequestDTO`
-* `ShipmentResponseDTO`
+- `GlobalExceptionHandler` — RFC 7807 responses for 400, 404, 409, 500
+- `ResourceNotFoundException`
 
-### Repositories
+**Business rules** — `ShipmentStatus`:
 
-The repository layer uses Spring Data JPA for database access.
-
-Repositories include:
-
-* `CustomerRepository`
-* `DeliveryRepository`
-* `DriverRepository`
-* `ShipmentRepository`
-* `ShipmentStatusHistoryRepository`
-* `StatusUpdateRepository`
-
-### Exception Handling
-
-The application includes centralized exception handling using:
-
-* `GlobalExceptionHandler`
-* `ResourceNotFoundException`
+- Defines valid statuses and allowed transitions
+- Rejects invalid changes like Delivered → Pending with HTTP 409
 
 ---
 
-## Data Models
+## Shipping Fee Calculation
 
-The application contains models representing:
+```text
+Shipping Fee = Base Fee + (Package Weight × Rate per kg)
+```
 
-* Customers
-* Drivers
-* Shipments
-* Deliveries
-* Shipment status updates
-* Shipment status history
+- Base Fee: R50.00
+- Rate: R12.50 / kg
+
+Example — a 4 kg package:
+
+```text
+R50.00 + (4 × R12.50) = R100.00
+```
+
+Handled in `ShipmentService.calculateFee()`.
+
+---
+
+## Status Workflow
+
+```text
+Pending ──► Confirmed ──► In Transit ──► Out for Delivery ──► Delivered
+   │            │              │                │
+   └────────────┴──────────────┴────────────────┴──► Cancelled
+```
+
+Delivered and Cancelled are terminal — no further transitions allowed.
+
+Every transition writes an entry to `shipment_status_history` with the new status, timestamp, and optional remarks.
 
 ---
 
 ## Technologies
 
-| Technology         | Purpose                         |
-| ------------------ | ------------------------------- |
-| Java               | Programming language            |
-| Spring Boot        | Backend framework               |
-| Spring Web         | REST API development            |
-| Spring Data JPA    | Persistence and database access |
-| MySQL              | Relational database             |
-| Maven              | Build and dependency management |
-| Jakarta Validation | Request validation              |
-| Lombok             | Boilerplate reduction           |
-| SpringDoc OpenAPI  | API documentation               |
-| JUnit 5            | Testing                         |
-| Mockito            | Mocking and unit testing        |
-| MockMvc            | Controller testing              |
+| Technology | Purpose |
+|---|---|
+| Java 26 | Language |
+| Spring Boot 4.1 | Framework |
+| Spring Web | REST API |
+| Spring Data JPA | Persistence |
+| Hibernate 7 | ORM |
+| PostgreSQL 16 | Database |
+| Maven | Build tool |
+| Jakarta Validation | Input validation |
+| Lombok | Boilerplate reduction |
+| SpringDoc OpenAPI | Swagger UI & API docs |
+| JUnit 5, Mockito | Testing |
+| Docker & Docker Compose | Containerised local development |
+| Render | Cloud hosting (app + managed Postgres) |
+| HTML, CSS, JavaScript | Admin dashboard & tracking UI |
 
 ---
 
 ## Project Structure
 
 ```text
-src/
-├── main/
-│   ├── java/com/example/logistics/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── dtos/
-│   │   ├── exceptions/
-│   │   ├── models/
-│   │   ├── repositories/
-│   │   ├── services/
-│   │   └── LogisticsApplication.java
-│   │
-│   └── resources/
-│       ├── static/
-│       └── application.properties
+src/main/
+├── java/com/example/logistics/
+│   ├── config/
+│   │   ├── DataSeeder.java             — seeds demo data on first run
+│   │   └── OpenApiConfig.java
+│   ├── controllers/
+│   ├── dtos/
+│   ├── exceptions/
+│   ├── models/
+│   ├── repositories/
+│   ├── services/
+│   └── LogisticsApplication.java
 │
-└── test/
-    └── java/com/example/logistics/
-        ├── controllers/
-        │   └── ShipmentControllerTest.java
-        │
-        └── services/
-            └── StatusUpdateServiceTest.java
+└── resources/
+    ├── static/                         — admin dashboard UI
+    │   ├── index.html
+    │   ├── shipments.html
+    │   ├── shipment-details.html
+    │   ├── customers.html
+    │   ├── drivers.html
+    │   ├── track.html
+    │   └── css/app.css
+    │
+    ├── application.properties          — production config (env vars)
+    └── application-local.properties    — local dev config (gitignored)
 ```
 
 ---
@@ -232,31 +207,51 @@ src/
 
 ### Shipments
 
-| Method | Endpoint                | Description               |
-| ------ | ----------------------- | ------------------------- |
-| GET    | `/api/shipments`        | Retrieve shipments        |
-| GET    | `/api/shipments/{id}`   | Retrieve a shipment by ID |
-| GET    | `/api/shipments/search` | Search shipments          |
-| POST   | `/api/shipments`        | Create a shipment         |
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/shipments` | List all shipments (enriched) |
+| GET | `/api/shipments/{id}` | Get one shipment |
+| GET | `/api/shipments/{id}/details` | Get shipment with full status history |
+| GET | `/api/shipments/search?status=&name=` | Search by status and/or recipient name |
+| POST | `/api/shipments` | Create a shipment |
+| PATCH | `/api/shipments/{id}/status` | Update status (validated transitions) |
+| PATCH | `/api/shipments/{id}/assign-driver` | Reassign to a driver |
+
+### Customers
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/customers` | List all customers |
+| POST | `/api/customers` | Create a customer |
+
+### Drivers
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/drivers` | List all drivers |
+| POST | `/api/drivers` | Create a driver |
 
 ### Status Updates
 
-The API also supports shipment status updates through the status-update functionality.
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/status-updates` | List status updates |
+| GET | `/api/status-updates/shipment/{id}` | Updates for a specific shipment |
+| POST | `/api/status-updates` | Create a status update |
 
 ---
 
-## Example Request
+## Example Requests
 
-### Create Shipment
+### Create a Shipment
 
-```json
+```http
+POST /api/shipments
+Content-Type: application/json
+
 {
-  "customer": {
-    "customerId": 1
-  },
-  "driver": {
-    "driverId": 1
-  },
+  "customerId": 1,
+  "driverId": 1,
   "packageWeight": 12.50,
   "recipientName": "Bob Marley",
   "deliveryAddress": "123 Main St, Kimberley",
@@ -264,130 +259,165 @@ The API also supports shipment status updates through the status-update function
 }
 ```
 
+### Update Status
+
+```http
+PATCH /api/shipments/3/status?status=Confirmed&remarks=Verified+by+dispatcher
+```
+
+### Invalid Transition (returns 409 Conflict)
+
+```http
+PATCH /api/shipments/1/status?status=Pending
+```
+
+Response:
+
+```json
+{
+  "type": "https://api.logistics.com/errors/conflict",
+  "title": "Business Rule Violation",
+  "status": 409,
+  "detail": "Invalid transition from Delivered to Pending",
+  "timestamp": "2026-10-04T00:21:43Z"
+}
+```
+
+---
+
+## Running Locally
+
+### Prerequisites
+
+- Java 26 — Adoptium Temurin recommended
+- PostgreSQL 16+ — [download](https://www.postgresql.org/download/)
+- Git
+
+Maven is included via the Maven Wrapper (`mvnw` / `mvnw.cmd`).
+
+### Steps
+
+#### 1. Clone the repository
+
+```bash
+git clone https://github.com/chacha-debug/logistics-management-api.git
+cd logistics-management-api
+```
+
+#### 2. Create the database
+
+```sql
+CREATE DATABASE logistics_dev;
+```
+
+#### 3. Configure local credentials
+
+Create `src/main/resources/application-local.properties`:
+
+```properties
+DB_URL=jdbc:postgresql://localhost:5432/logistics_dev
+DB_USERNAME=postgres
+DB_PASSWORD=your_password_here
+```
+
+This file is gitignored — your password won't be committed.
+
+#### 4. Run the application
+
+```bash
+# Windows
+mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+
+# macOS / Linux
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+The app starts at `http://localhost:8080`. On first run, `DataSeeder` creates:
+
+- 10 customers
+- 5 drivers
+- 15 shipments spread over 3 weeks
+- 36 status-history entries
+
+#### 5. Open the dashboard
+
+| Page | URL |
+|---|---|
+| Dashboard | http://localhost:8080/ |
+| All Shipments | http://localhost:8080/shipments.html |
+| Customers | http://localhost:8080/customers.html |
+| Drivers | http://localhost:8080/drivers.html |
+| Track Shipment | http://localhost:8080/track.html |
+| API Docs | http://localhost:8080/swagger-ui.html |
+
+---
+
+## Running with Docker (optional)
+
+A `Dockerfile` and `docker-compose.yml` are included for containerised development.
+
+```bash
+docker compose up --build
+```
+
+This starts a PostgreSQL container and the Spring Boot app, and the `DataSeeder` populates demo data automatically.
+
 ---
 
 ## Testing
 
-The project includes automated tests for both controller and service-layer functionality.
-
-### Controller Testing
-
-`ShipmentControllerTest` uses:
-
-* JUnit 5
-* Mockito
-* Spring MockMvc
-
-The tests include:
-
-* Valid shipment creation requests
-* Invalid shipment creation requests
-* HTTP 200 responses
-* HTTP 400 validation responses
-
-### Service Testing
-
-`StatusUpdateServiceTest` verifies that:
-
-* A shipment can be located by ID
-* A shipment's current status is updated
-* The updated shipment is saved
-* The status update is saved
-* Repository interactions occur as expected
-
----
-
-## Getting Started
-
-### Prerequisites
-
-Install:
-
-* Java
-* MySQL
-* Git
-
-Maven is included through the Maven Wrapper.
-
-### Clone the Repository
-
 ```bash
-git clone https://github.com/chacha-debug/logistics-management-api.git
-```
-
-```bash
-cd logistics-management-api
-```
-
-### Configure the Database
-
-Configure your MySQL database connection in:
-
-```text
-src/main/resources/application.properties
-```
-
-Do not commit real passwords, API keys, or other sensitive credentials to GitHub.
-
-### Run the Application
-
-On Windows:
-
-```bash
-mvnw.cmd spring-boot:run
-```
-
-On macOS/Linux:
-
-```bash
-./mvnw spring-boot:run
-```
-
-### Run Tests
-
-Windows:
-
-```bash
+# Windows
 mvnw.cmd test
-```
 
-macOS/Linux:
-
-```bash
+# macOS / Linux
 ./mvnw test
 ```
 
+Tests cover:
+
+- Controller validation and HTTP responses (`ShipmentControllerTest`)
+- Service-layer status update logic (`StatusUpdateServiceTest`)
+
 ---
 
-## API Documentation
+## Deployment
 
-The project includes OpenAPI / Swagger support for documenting and testing the REST API.
+The application is deployed on Render with:
 
-After starting the application, open the configured Swagger UI endpoint in your browser.
+- Web Service running the Docker image
+- Managed PostgreSQL 16 database
+- Environment variables for `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
+
+Pushing to `main` triggers an automatic redeploy.
+
+> **Note:** The Render free tier spins down after 15 minutes of inactivity. The first request after a period of idleness may take 30–60 seconds.
 
 ---
 
 ## Future Improvements
 
-Possible future improvements include:
-
-* Authentication and authorization
-* Role-based access control
-* Pagination
-* More advanced shipment filtering
-* Improved delivery tracking
-* Automated notifications
-* Docker containerization
-* CI/CD integration
-* Additional integration tests
-* Production deployment
+- JWT authentication and role-based access control (Admin, Dispatcher, Driver, Customer)
+- Pagination on list endpoints
+- Advanced filtering (date range, driver, customer)
+- Email/SMS notifications for status changes
+- CI/CD pipeline with GitHub Actions
+- Integration tests using Testcontainers
+- Custom domain
 
 ---
 
 ## Author
 
-### Chantele Mucuio
+**Chantele Mucuio**
+ICT Student | Aspiring Software Engineer
 
-ICT Student | Aspiring Software Engineer | Backend & Full-Stack Developer
+- GitHub: [@chacha-debug](https://github.com/chacha-debug)
+- LinkedIn: [chantele-mucuio-409918382](https://www.linkedin.com/in/chantele-mucuio-409918382/)
+- Email: [chantelemucuio@gmail.com](mailto:chantelemucuio@gmail.com)
 
-GitHub: [chacha-debug](https://github.com/chacha-debug)
+---
+
+## License
+
+MIT — free to use, learn from, and adapt.
