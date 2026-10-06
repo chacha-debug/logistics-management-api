@@ -66,18 +66,4 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
-
-    /**
-     * Fallback — anything else. Returns 500 without leaking internal details.
-     */
-    @ExceptionHandler(Exception.class)
-    public ProblemDetail handleGeneric(Exception ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred. Please contact support if the problem persists.");
-        problem.setTitle("Internal Server Error");
-        problem.setType(URI.create("https://api.logistics.com/errors/internal"));
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
-    }
 }

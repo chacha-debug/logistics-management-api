@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Not Found - LogisticsHub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+    .error-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--bg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Soft teal glow in the background */
+    .error-wrap::before {
+        content: '';
+        position: absolute;
+        top: -200px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 800px;
+        height: 800px;
+        background: radial-gradient(circle, rgba(79, 209, 197, 0.12), transparent 60%);
+        pointer-events: none;
+    }
+
+    .error-card {
+        background: var(--surface);
+        border-radius: var(--r-xl);
+        padding: 3rem 2.5rem;
+        max-width: 560px;
+        width: 100%;
+        text-align: center;
+        box-shadow: var(--sh-lg);
+        position: relative;
+        z-index: 1;
+        animation: fadeUp 0.4s ease-out;
+    }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .error-code {
+        font-size: 5rem;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        line-height: 1;
+        background: var(--brand-grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .error-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--brand-soft);
+        color: var(--brand);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 1.5rem;
+    }
+
+    .error-card h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.02em;
+    }
+
+    .error-card p {
+        color: var(--muted);
+        font-size: 0.95rem;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+
+    .error-actions .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .error-help {
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-soft);
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+
+    .error-help a {
+        color: var(--brand);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .error-help a:hover {
+        color: var(--brand-dark);
+        text-decoration: underline;
+    }
+
+    .error-links {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .error-links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--ink-2);
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 500;
+        transition: color 0.15s;
+    }
+
+    .error-links a:hover { color: var(--brand); }
+    .error-links i { font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="error-wrap">
+    <div class="error-card">
+        <div class="error-icon">
+            <i class="fas fa-compass"></i>
+        </div>
+        <div class="error-code">404</div>
+        <h1>Page not found</h1>
+        <p>
+            The page you're looking for doesn't exist or has been moved. 
+            It might have been a typo, or the link may be out of date.
+        </p>
+
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-home"></i> Back to Dashboard
+            </a>
+            <a href="/track.html" class="btn btn-secondary">
+                <i class="fas fa-magnifying-glass-location"></i> Track a Shipment
+            </a>
+        </div>
+
+        <div class="error-help">
+            <div>Looking for something specific?</div>
+            <div class="error-links">
+                <a href="/shipments.html"><i class="fas fa-box"></i> Shipments</a>
+                <a href="/customers.html"><i class="fas fa-users"></i> Customers</a>
+                <a href="/drivers.html"><i class="fas fa-id-card"></i> Drivers</a>
+                <a href="/swagger-ui.html" target="_blank"><i class="fas fa-code"></i> API Docs</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
